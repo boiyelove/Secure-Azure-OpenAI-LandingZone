@@ -1,0 +1,61 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Governed Azure OpenAI",
+    "version": "2024-10-21"
+  },
+  "paths": {
+    "/deployments/{deployment}/chat/completions": {
+      "post": {
+        "operationId": "createChatCompletion",
+        "parameters": [
+          {
+            "name": "deployment",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-zA-Z0-9._-]{1,64}$"
+            }
+          },
+          {
+            "name": "api-version",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "2024-10-21"
+              ]
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "messages"
+                ],
+                "additionalProperties": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Chat completion"
+          },
+          "401": {
+            "description": "Missing or invalid Entra token"
+          },
+          "429": {
+            "description": "Request or token budget exceeded"
+          }
+        }
+      }
+    }
+  }
+}

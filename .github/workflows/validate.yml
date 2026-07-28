@@ -1,0 +1,23 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Azure CLI
+        uses: azure/CLI@v2
+        with:
+          azcliversion: 2.85.0
+          inlineScript: |
+            az bicep install --version v0.45.15
+            ./scripts/validate.sh

@@ -1,0 +1,54 @@
+<policies>
+  <inbound>
+    <base />
+    <validate-azure-ad-token tenant-id="{{entra-tenant-id}}"
+                             header-name="Authorization"
+                             failed-validation-httpcode="401"
+                             failed-validation-error-message="Unauthorized">
+      <client-application-ids>
+        <application-id>{{client-application-id}}</application-id>
+      </client-application-ids>
+      <audiences>
+        <audience>{{client-application-id}}</audience>
+      </audiences>
+    </validate-azure-ad-token>
+    <set-variable name="callerKey"
+                  value="@(context.Principal?.Id ?? context.Request.IpAddress)" />
+    <rate-limit-by-key calls="30"
+                       renewal-period="60"
+                       counter-key="@((string)context.Variables[&quot;callerKey&quot;])"
+                       remaining-calls-header-name="x-ratelimit-remaining" />
+    <azure-openai-token-limit counter-key="@((string)context.Variables[&quot;callerKey&quot;])"
+                              tokens-per-minute="20000"
+                              estimate-prompt-tokens="true"
+                              remaining-tokens-header-name="x-token-limit-remaining" />
+    <set-header name="api-key" exists-action="delete" />
+    <authentication-managed-identity resource="https://cognitiveservices.azure.com"
+                                     output-token-variable-name="openAIToken"
+                                     ignore-error="false" />
+    <set-header name="Authorization" exists-action="override">
+      <value>@(&quot;Bearer &quot; + (string)context.Variables[&quot;openAIToken&quot;])</value>
+    </set-header>
+    <set-backend-service base-url="{{openai-backend-url}}" />
+    <set-header name="x-correlation-id" exists-action="skip">
+      <value>@(context.RequestId.ToString())</value>
+    </set-header>
+  </inbound>
+  <backend>
+    <forward-request timeout="120" />
+  </backend>
+  <outbound>
+    <set-header name="x-correlation-id" exists-action="override">
+      <value>@(context.RequestId.ToString())</value>
+    </set-header>
+    <set-header name="x-content-type-options" exists-action="override">
+      <value>nosniff</value>
+    </set-header>
+  </outbound>
+  <on-error>
+    <set-header name="x-correlation-id" exists-action="override">
+      <value>@(context.RequestId.ToString())</value>
+    </set-header>
+    <base />
+  </on-error>
+</policies>
