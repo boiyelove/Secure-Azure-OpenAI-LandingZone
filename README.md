@@ -48,6 +48,14 @@ The gateway:
 See [architecture](docs/architecture.md), [threat model](docs/threat-model.md),
 [operations](docs/runbook.md), and [version evidence](docs/version-evidence.md).
 
+## Best complementary diagram
+
+**Recommended view: Private Azure OpenAI trust-boundary data path.** A topology view is the strongest complement because it makes network and identity boundaries, enforcement hops, and the governed path physically legible.
+
+![Icon-based private azure openai trust-boundary data path for Secure Azure OpenAI Landing Zone](docs/operational-view.svg)
+
+The view follows **Enter Application Gateway → Apply API policy → Traverse Private Link → Invoke keyless model**. Use it during design reviews, operational walkthroughs, and failure-mode discussions; use the logical architecture above when the question is which technologies integrate.
+
 ## Prerequisites
 
 - Azure CLI `2.85.0` or a compatible later release
