@@ -8,6 +8,19 @@ managed identity over Private Link.
 > This project creates chargeable Azure resources. Start with the `dev` parameters,
 > review the what-if output, set a budget, and run the teardown command after testing.
 
+## Project metadata
+
+The metadata below is derived from tracked source, manifests, and infrastructure
+files. It describes what this repository includes; live-service integration remains
+bounded by the documented deployment and validation limitations.
+
+| Category | Included |
+| --- | --- |
+| Platforms | Microsoft Azure; GitHub Actions |
+| Services and stack | Application Gateway; API Management; Azure OpenAI; Private Link; Log Analytics |
+| Languages and formats | Bicep; Bicep parameters; Bash; JSON; YAML; XML |
+| Delivery and IaC | Bicep + `.bicepparam`; GitHub Actions CI; YAML configuration |
+
 ## Problem statement
 
 A platform team submits a private Azure OpenAI deployment request with an Entra-authenticated APIM consumer, a per-team token budget, and chargeback tags; the blueprint produces a private, observable gateway plan without exposing the model endpoint.
