@@ -1,4 +1,9 @@
+// Secure-Azure-OpenAI-LandingZone infrastructure template.
+// Resource behavior stays in this file; deployment-time values are supplied by ./environments/dev.bicepparam.
+
 targetScope = 'subscription'
+
+// Deployment inputs: values are explicit, reviewable, and environment-specific.
 
 @description('Short lowercase prefix used to create globally unique resource names.')
 @minLength(3)
@@ -11,7 +16,7 @@ param prefix string
   'test'
   'prod'
 ])
-param environment string = 'dev'
+param environment string
 
 @description('Azure region for the resource group and resources.')
 param location string
@@ -26,7 +31,7 @@ param clientApplicationId string
 param publisherEmail string
 
 @description('Publisher name required by API Management.')
-param publisherName string = 'Platform Engineering'
+param publisherName string
 
 @secure()
 @description('Base64-encoded PFX certificate used by the Application Gateway HTTPS listener.')
@@ -37,34 +42,40 @@ param listenerCertificateData string
 param listenerCertificatePassword string
 
 @description('Optional Azure OpenAI model name. Leave empty to omit the deployment.')
-param modelName string = ''
+param modelName string
 
 @description('Optional Azure OpenAI model version. Required when modelName is set.')
-param modelVersion string = ''
+param modelVersion string
 
 @description('Deployment name exposed in the OpenAI request path.')
-param modelDeploymentName string = 'chat'
+param modelDeploymentName string
 
 @minValue(1)
 @maxValue(1000)
-param modelCapacity int = 10
+param modelCapacity int
 
 @description('Tags applied to all supported resources.')
-param tags object = {}
+param tags object
 
+// Derived configuration: constructs deterministic names, IDs, and policy values.
 var resourceGroupName = 'rg-${prefix}-${environment}'
-var deploymentTags = union({
-  application: 'secure-azure-openai-landing-zone'
-  environment: environment
-  managedBy: 'bicep'
-}, tags)
+var deploymentTags = union(
+  {
+    application: 'secure-azure-openai-landing-zone'
+    environment: environment
+    managedBy: 'bicep'
+  },
+  tags
+)
 
+// Resource resourceGroup: declares Microsoft.Resources/resourceGroups@2025-04-01 and its security settings.
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2025-04-01' = {
   name: resourceGroupName
   location: location
   tags: deploymentTags
 }
 
+// Module landingZone: composes landing-zone.bicep with validated inputs.
 module landingZone 'landing-zone.bicep' = {
   name: 'landing-zone'
   scope: resourceGroup
@@ -86,6 +97,7 @@ module landingZone 'landing-zone.bicep' = {
   }
 }
 
+// Deployment outputs: expose identifiers needed by operators and downstream automation.
 output resourceGroupName string = resourceGroup.name
 output applicationGatewayPublicIp string = landingZone.outputs.applicationGatewayPublicIp
 output apiHostname string = landingZone.outputs.apiHostname

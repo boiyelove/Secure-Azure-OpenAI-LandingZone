@@ -1,9 +1,9 @@
-// Deployment values for Secure-Azure-OpenAI-LandingZone (main.bicep).
+// Deployment values for Secure-Azure-OpenAI-LandingZone (landing-zone.bicep).
 // Values are synthetic and safe by default; review placeholders before what-if or deployment.
-using '../main.bicep'
+using './landing-zone.bicep'
 
 // Defines deterministic naming for this example environment.
-param prefix = 'aoailz'
+param prefix = 'saolsecu'
 
 // Supplies the environment input separately from the resource template.
 param environment = 'dev'
@@ -12,10 +12,10 @@ param environment = 'dev'
 param location = 'westeurope'
 
 // Supplies a synthetic identity or scope identifier; replace it with the approved value.
-param tenantId = '00000000-0000-0000-0000-000000000000'
+param tenantId = '00000000-0000-4000-8000-000000000001'
 
 // Supplies a synthetic identity or scope identifier; replace it with the approved value.
-param clientApplicationId = '00000000-0000-0000-0000-000000000000'
+param clientApplicationId = '00000000-0000-4000-8000-000000000001'
 
 // Supplies the publisherEmail input separately from the resource template.
 param publisherEmail = 'platform@example.com'
@@ -43,7 +43,6 @@ param modelCapacity = 10
 
 // Provides ownership and governance metadata outside the resource template.
 param tags = {
+  environment: 'dev'
   owner: 'platform-engineering'
-  costCenter: 'replace-me'
-  dataClassification: 'confidential'
 }

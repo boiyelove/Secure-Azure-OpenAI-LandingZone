@@ -1,4 +1,9 @@
+// Secure-Azure-OpenAI-LandingZone infrastructure template.
+// Resource behavior stays in this file; deployment-time values are supplied by ./landing-zone.bicepparam.
+
 targetScope = 'resourceGroup'
+
+// Deployment inputs: values are explicit, reviewable, and environment-specific.
 
 param prefix string
 param environment string
@@ -17,6 +22,7 @@ param modelDeploymentName string
 param modelCapacity int
 param tags object
 
+// Derived configuration: constructs deterministic names, IDs, and policy values.
 var suffix = uniqueString(subscription().id, resourceGroup().id)
 var compactPrefix = replace('${prefix}${environment}', '-', '')
 var openAIName = take('oai${compactPrefix}${suffix}', 64)
@@ -30,6 +36,7 @@ var openAIRoleDefinitionId = subscriptionResourceId(
   '5e0bd9bd-7b93-4f28-af87-19fc36ad61bd'
 )
 
+// Resource workspace: declares Microsoft.OperationalInsights/workspaces@2025-02-01 and its security settings.
 resource workspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' = {
   name: workspaceName
   location: location
@@ -42,6 +49,7 @@ resource workspace 'Microsoft.OperationalInsights/workspaces@2025-02-01' = {
   }
 }
 
+// Resource apimNsg: declares Microsoft.Network/networkSecurityGroups@2024-07-01 and its security settings.
 resource apimNsg 'Microsoft.Network/networkSecurityGroups@2024-07-01' = {
   name: 'nsg-apim-${prefix}-${environment}'
   location: location
@@ -91,6 +99,7 @@ resource apimNsg 'Microsoft.Network/networkSecurityGroups@2024-07-01' = {
   }
 }
 
+// Resource vnet: declares Microsoft.Network/virtualNetworks@2024-07-01 and its security settings.
 resource vnet 'Microsoft.Network/virtualNetworks@2024-07-01' = {
   name: vnetName
   location: location
@@ -128,21 +137,25 @@ resource vnet 'Microsoft.Network/virtualNetworks@2024-07-01' = {
   }
 }
 
+// Resource applicationGatewaySubnet: declares Microsoft.Network/virtualNetworks/subnets@2024-07-01 and its security settings.
 resource applicationGatewaySubnet 'Microsoft.Network/virtualNetworks/subnets@2024-07-01' existing = {
   parent: vnet
   name: 'application-gateway'
 }
 
+// Resource apimSubnet: declares Microsoft.Network/virtualNetworks/subnets@2024-07-01 and its security settings.
 resource apimSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-07-01' existing = {
   parent: vnet
   name: 'api-management'
 }
 
+// Resource privateEndpointSubnet: declares Microsoft.Network/virtualNetworks/subnets@2024-07-01 and its security settings.
 resource privateEndpointSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-07-01' existing = {
   parent: vnet
   name: 'private-endpoints'
 }
 
+// Resource openAI: declares Microsoft.CognitiveServices/accounts@2025-06-01 and its security settings.
 resource openAI 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   name: openAIName
   location: location
@@ -166,6 +179,7 @@ resource openAI 'Microsoft.CognitiveServices/accounts@2025-06-01' = {
   }
 }
 
+// Resource modelDeployment: declares Microsoft.CognitiveServices/accounts/deployments@2025-06-01 and its security settings.
 resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-06-01' = if (!empty(modelName)) {
   parent: openAI
   name: modelDeploymentName
@@ -183,12 +197,14 @@ resource modelDeployment 'Microsoft.CognitiveServices/accounts/deployments@2025-
   }
 }
 
+// Resource openAIDns: declares Microsoft.Network/privateDnsZones@2024-06-01 and its security settings.
 resource openAIDns 'Microsoft.Network/privateDnsZones@2024-06-01' = {
   name: openAIDnsZoneName
   location: 'global'
   tags: tags
 }
 
+// Resource openAIDnsLink: declares Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01 and its security settings.
 resource openAIDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {
   parent: openAIDns
   name: 'link-${vnetName}'
@@ -201,6 +217,7 @@ resource openAIDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@20
   }
 }
 
+// Resource openAIPrivateEndpoint: declares Microsoft.Network/privateEndpoints@2024-07-01 and its security settings.
 resource openAIPrivateEndpoint 'Microsoft.Network/privateEndpoints@2024-07-01' = {
   name: 'pep-${openAIName}'
   location: location
@@ -223,6 +240,7 @@ resource openAIPrivateEndpoint 'Microsoft.Network/privateEndpoints@2024-07-01' =
   }
 }
 
+// Resource openAIDnsGroup: declares Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-07-01 and its security settings.
 resource openAIDnsGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-07-01' = {
   parent: openAIPrivateEndpoint
   name: 'default'
@@ -238,6 +256,7 @@ resource openAIDnsGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups
   }
 }
 
+// Resource apim: declares Microsoft.ApiManagement/service@2024-05-01 and its security settings.
 resource apim 'Microsoft.ApiManagement/service@2024-05-01' = {
   name: apimName
   location: location
@@ -260,6 +279,7 @@ resource apim 'Microsoft.ApiManagement/service@2024-05-01' = {
   }
 }
 
+// Resource openAIUserRole: declares Microsoft.Authorization/roleAssignments@2022-04-01 and its security settings.
 resource openAIUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(openAI.id, apim.id, openAIRoleDefinitionId)
   scope: openAI
@@ -270,6 +290,7 @@ resource openAIUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   }
 }
 
+// Resource tenantNamedValue: declares Microsoft.ApiManagement/service/namedValues@2024-05-01 and its security settings.
 resource tenantNamedValue 'Microsoft.ApiManagement/service/namedValues@2024-05-01' = {
   parent: apim
   name: 'entra-tenant-id'
@@ -280,6 +301,7 @@ resource tenantNamedValue 'Microsoft.ApiManagement/service/namedValues@2024-05-0
   }
 }
 
+// Resource audienceNamedValue: declares Microsoft.ApiManagement/service/namedValues@2024-05-01 and its security settings.
 resource audienceNamedValue 'Microsoft.ApiManagement/service/namedValues@2024-05-01' = {
   parent: apim
   name: 'client-application-id'
@@ -290,6 +312,7 @@ resource audienceNamedValue 'Microsoft.ApiManagement/service/namedValues@2024-05
   }
 }
 
+// Resource backendNamedValue: declares Microsoft.ApiManagement/service/namedValues@2024-05-01 and its security settings.
 resource backendNamedValue 'Microsoft.ApiManagement/service/namedValues@2024-05-01' = {
   parent: apim
   name: 'openai-backend-url'
@@ -300,6 +323,7 @@ resource backendNamedValue 'Microsoft.ApiManagement/service/namedValues@2024-05-
   }
 }
 
+// Resource openAIApi: declares Microsoft.ApiManagement/service/apis@2024-05-01 and its security settings.
 resource openAIApi 'Microsoft.ApiManagement/service/apis@2024-05-01' = {
   parent: apim
   name: 'openai'
@@ -316,6 +340,7 @@ resource openAIApi 'Microsoft.ApiManagement/service/apis@2024-05-01' = {
   }
 }
 
+// Resource openAIPolicy: declares Microsoft.ApiManagement/service/apis/policies@2024-05-01 and its security settings.
 resource openAIPolicy 'Microsoft.ApiManagement/service/apis/policies@2024-05-01' = {
   parent: openAIApi
   name: 'policy'
@@ -331,6 +356,7 @@ resource openAIPolicy 'Microsoft.ApiManagement/service/apis/policies@2024-05-01'
   ]
 }
 
+// Resource publicIp: declares Microsoft.Network/publicIPAddresses@2024-07-01 and its security settings.
 resource publicIp 'Microsoft.Network/publicIPAddresses@2024-07-01' = {
   name: 'pip-${gatewayName}'
   location: location
@@ -348,6 +374,7 @@ resource publicIp 'Microsoft.Network/publicIPAddresses@2024-07-01' = {
   }
 }
 
+// Resource wafPolicy: declares Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies@2024-07-01 and its security settings.
 resource wafPolicy 'Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies@2024-07-01' = {
   name: 'waf-${prefix}-${environment}'
   location: location
@@ -371,6 +398,7 @@ resource wafPolicy 'Microsoft.Network/ApplicationGatewayWebApplicationFirewallPo
   }
 }
 
+// Resource applicationGateway: declares Microsoft.Network/applicationGateways@2024-07-01 and its security settings.
 resource applicationGateway 'Microsoft.Network/applicationGateways@2024-07-01' = {
   name: gatewayName
   location: location
@@ -504,7 +532,11 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2024-07-01' =
             id: resourceId('Microsoft.Network/applicationGateways/backendAddressPools', gatewayName, 'apim')
           }
           backendHttpSettings: {
-            id: resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', gatewayName, 'apim-https')
+            id: resourceId(
+              'Microsoft.Network/applicationGateways/backendHttpSettingsCollection',
+              gatewayName,
+              'apim-https'
+            )
           }
         }
       }
@@ -512,6 +544,7 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2024-07-01' =
   }
 }
 
+// Resource workspaceDiagnostics: declares Microsoft.Insights/diagnosticSettings@2021-05-01-preview and its security settings.
 resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   name: 'send-to-${workspaceName}'
   scope: openAI
@@ -536,6 +569,7 @@ resource workspaceDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-
   }
 }
 
+// Resource apimDiagnostics: declares Microsoft.Insights/diagnosticSettings@2021-05-01-preview and its security settings.
 resource apimDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   name: 'send-to-${workspaceName}'
   scope: apim
@@ -560,6 +594,7 @@ resource apimDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-previ
   }
 }
 
+// Resource gatewayDiagnostics: declares Microsoft.Insights/diagnosticSettings@2021-05-01-preview and its security settings.
 resource gatewayDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   name: 'send-to-${workspaceName}'
   scope: applicationGateway
@@ -580,6 +615,7 @@ resource gatewayDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
   }
 }
 
+// Deployment outputs: expose identifiers needed by operators and downstream automation.
 output applicationGatewayPublicIp string = publicIp.properties.ipAddress
 output apiHostname string = '${apimName}.azure-api.net'
 output openAIAccountName string = openAI.name
