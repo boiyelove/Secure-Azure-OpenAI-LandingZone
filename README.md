@@ -8,26 +8,35 @@ managed identity over Private Link.
 > This project creates chargeable Azure resources. Start with the `dev` parameters,
 > review the what-if output, set a budget, and run the teardown command after testing.
 
-## Example synopsis
+## Problem statement
 
 A platform team submits a private Azure OpenAI deployment request with an Entra-authenticated APIM consumer, a per-team token budget, and chargeback tags; the blueprint produces a private, observable gateway plan without exposing the model endpoint.
 
-## Real-world scenario
+A production implementation can still fail even when every resource deploys successfully. The material risk is untrusted content, model routing, or tool execution crossing an identity or data boundary even though the model call succeeds. The design therefore treats Application Gateway, API Management, Azure OpenAI, and the surrounding identity and evidence controls as one reviewable system rather than unrelated configuration tasks.
+
+## Example case study
+
+### Situation
 
 A regulated insurer wants several product teams to use generative AI without distributing model keys or allowing direct public access. This landing zone centralizes authentication, throttling, private connectivity, audit telemetry, and cost attribution so each team can innovate inside a governed boundary.
 
+### Response
+
+A regulated insurer gives several teams one governed AI platform. Each authenticates to APIM, receives its own token budget, and reaches the model only through managed identity and Private Link; backend keys and direct access are denied.
+
+The team first exercises the repository's synthetic approved and denied fixtures. An approved request must produce the same idempotent plan on replay; a stale, unscoped, public, or unapproved request must fail before an Azure adapter is allowed to run.
+
+### Expected outcome
+
+Stakeholders receive a decision package they can attach to a change record: requested scope, controls evaluated, the reason for approval or denial, and the explicit handoff to live integration. The example supports design review and incident rehearsal without pretending that a local test changed Azure.
+
 ## Architecture
 
-```mermaid
-flowchart LR
-  C["Entra-authenticated client"] --> WAF["Application Gateway WAF_v2"]
-  WAF --> APIM["API Management (internal VNet mode)"]
-  APIM -->|"managed identity + Private Link"| AOAI["Azure OpenAI"]
-  APIM --> LAW["Log Analytics"]
-  WAF --> LAW
-  AOAI --> LAW
-  DNS["Private DNS"] --> AOAI
-```
+![Icon-based architecture for Secure-Azure-OpenAI-LandingZone](docs/architecture.svg)
+
+The upper boundary names the principal services and technologies used by this repository. The lower boundary shows the implemented control flow: desired state is validated, provider action remains an explicit integration gate, and sanitized evidence is retained for review and deterministic replay.
+
+Azure product icons come from [Microsoft's official Azure Architecture Icons](https://learn.microsoft.com/azure/architecture/icons/). Open-source marks are sourced from [Simple Icons](https://simpleicons.org/) when shown; each mark identifies its respective technology.
 
 The gateway:
 
